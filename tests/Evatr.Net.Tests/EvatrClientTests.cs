@@ -62,12 +62,37 @@ public class EvatrClientTests
     [Fact]
     public async Task Not_found_is_invalid()
     {
-        var (client, _) = Create(HttpStatusCode.NotFound, Fixture("synthetic-not-found.json"));
+        var (client, _) = Create(HttpStatusCode.NotFound, Fixture("recorded-not-found.json"));
 
-        var result = await client.CheckAsync(Qualified, Ct);
+        var result = await client.CheckAsync(Qualified with { RequestedVatId = "ATU12345675" }, Ct);
 
-        result.HttpStatusCode.Should().Be(404);
+        result.StatusCode.Should().Be("evatr-2001");
         result.StatusClass.Should().Be(EvatrStatusClass.Invalid);
+    }
+
+    [Fact]
+    public async Task Bad_check_digit_is_invalid_input_not_invalid()
+    {
+        var (client, _) = Create(HttpStatusCode.BadRequest, Fixture("recorded-bad-check-digit.json"));
+
+        var result = await client.CheckAsync(Qualified with { RequestedVatId = "ATU12345670" }, Ct);
+
+        result.StatusCode.Should().Be("evatr-0005");
+        result.StatusClass.Should().Be(EvatrStatusClass.InvalidInput);
+    }
+
+    [Fact]
+    public async Task Real_qualified_check_reports_member_state_gaps_as_not_provided()
+    {
+        var (client, _) = Create(HttpStatusCode.OK, Fixture("recorded-real-qualified-google-ireland.json"));
+
+        var result = await client.CheckAsync(Qualified with { RequestedVatId = "IE6388047V" }, Ct);
+
+        result.StatusClass.Should().Be(EvatrStatusClass.Valid);
+        result.CompanyName.Should().Be(FieldResult.Match);
+        result.Street.Should().Be(FieldResult.Match);
+        result.PostalCode.Should().Be(FieldResult.NotProvided);
+        result.City.Should().Be(FieldResult.Match);
     }
 
     [Fact]

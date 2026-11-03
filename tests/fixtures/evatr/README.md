@@ -14,9 +14,8 @@ Git keeps them byte-exact (`.gitattributes`: `-text`).
 | `recorded-status-catalog.json` | 200 | — | `GET /app/v1/info/statusmeldungen` |
 | `recorded-member-states.json` | 200 | — | `GET /app/v1/info/eu_mitgliedstaaten` |
 | `recorded-not-found.json` *(needs requester)* | 404 | `evatr-2001` | `ATU12345675` (made up, valid check digit; only recorded if 2001) |
-| `recorded-bad-check-digit.json` *(needs requester)* | 400 | `evatr-0005`/`0012` expected | `ATU12345670` (wrong check digit) |
-| `recorded-real-qualified-google-ireland.json` *(needs requester)* | 200 | `evatr-0000` | `IE6388047V` |
-| `synthetic-not-found.json` | 404 | `evatr-2001` | hand-written until the recorded one exists |
+| `recorded-bad-check-digit.json` *(needs requester)* | 400 | `evatr-0005` | `ATU12345670` (wrong check digit) |
+| `recorded-real-qualified-google-ireland.json` *(needs requester)* | 200 | `evatr-0000`, A/A/D/A | `IE6388047V`, Google Ireland Limited |
 | `synthetic-unavailable.json` | 500 | `evatr-2011` | hand-written; outages cannot be triggered |
 
 The "sandbox pair" is `DE123456789` → `ATU12345678`, documented as test values in the eVatR OpenAPI
