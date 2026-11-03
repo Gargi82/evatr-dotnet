@@ -118,8 +118,9 @@ public class ViesClientTests
     [Theory]
     [InlineData(HttpStatusCode.BadGateway, ViesStatusClass.Retryable)]
     [InlineData(HttpStatusCode.TooManyRequests, ViesStatusClass.Retryable)]
-    [InlineData(HttpStatusCode.NotFound, ViesStatusClass.Unknown)]
-    public async Task Unparseable_body_classifies_by_http_status(HttpStatusCode status, ViesStatusClass expected)
+    [InlineData(HttpStatusCode.NotFound, ViesStatusClass.Retryable)]
+    [InlineData(HttpStatusCode.OK, ViesStatusClass.Retryable)]
+    public async Task Non_json_body_is_always_retryable(HttpStatusCode status, ViesStatusClass expected)
     {
         var (client, _) = Create(status, "<html>gateway error</html>");
 

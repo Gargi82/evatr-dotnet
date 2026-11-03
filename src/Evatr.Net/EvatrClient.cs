@@ -10,13 +10,30 @@ public sealed class EvatrClientOptions
     public static readonly Uri DefaultBaseAddress = new("https://api.evatr.vies.bzst.de/");
 
     public Uri BaseAddress { get; set; } = DefaultBaseAddress;
+
+    /// <summary>
+    /// Limits outgoing requests (e.g. a <see cref="System.Threading.RateLimiting.TokenBucketRateLimiter"/>).
+    /// BZSt does not document rate limits, so none is applied by default. When no permit is granted
+    /// the client throws <see cref="ServiceNotCalledException"/>.
+    /// </summary>
+    public System.Threading.RateLimiting.RateLimiter? RateLimiter { get; set; }
+
+    /// <summary>
+    /// Only call the service inside this daily window; outside it the client throws
+    /// <see cref="ServiceNotCalledException"/> with the next opening time. BZSt does not document
+    /// service hours, so no window is applied by default.
+    /// </summary>
+    public ServiceWindow? ServiceWindow { get; set; }
+
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 }
 
 /// <summary>
-/// Client for the BZSt eVatR REST API. Takes an <see cref="HttpClient"/> so callers own
-/// retries, rate limiting and circuit breaking (e.g. Polly handlers). Transport failures
-/// propagate as <see cref="HttpRequestException"/> / <see cref="TaskCanceledException"/>;
-/// callers must treat them as "retry", never as "invalid".
+/// Client for the BZSt eVatR REST API. Takes an <see cref="HttpClient"/> so callers can add
+/// retries and circuit breaking (e.g. Polly handlers); rate limit and service window are
+/// configured via <see cref="EvatrClientOptions"/>. Transport failures propagate as
+/// <see cref="HttpRequestException"/> (including <see cref="ServiceNotCalledException"/>) or
+/// <see cref="TaskCanceledException"/>; callers must treat them as "retry", never as "invalid".
 /// </summary>
 public sealed class EvatrClient
 {
@@ -29,11 +46,14 @@ public sealed class EvatrClient
     private static readonly JsonSerializerOptions RequestJson = new() { PropertyNamingPolicy = null };
 
     private readonly HttpClient _http;
+    private readonly RequestGate _gate;
 
     public EvatrClient(HttpClient http, EvatrClientOptions? options = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
-        _http.BaseAddress ??= (options ?? new EvatrClientOptions()).BaseAddress;
+        options ??= new EvatrClientOptions();
+        _http.BaseAddress ??= options.BaseAddress;
+        _gate = new RequestGate(options.RateLimiter, options.ServiceWindow, options.TimeProvider);
     }
 
     /// <summary>
@@ -48,6 +68,7 @@ public sealed class EvatrClient
 
         var rawRequest = JsonSerializer.Serialize(request, RequestJson);
         using var content = new StringContent(rawRequest, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+        using var lease = await _gate.EnterAsync(ct).ConfigureAwait(false);
         using var response = await _http.PostAsync(CheckPath, content, ct).ConfigureAwait(false);
         var rawResponse = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -73,6 +94,7 @@ public sealed class EvatrClient
 
     private async Task<string> GetStringAsync(string path, CancellationToken ct)
     {
+        using var lease = await _gate.EnterAsync(ct).ConfigureAwait(false);
         using var response = await _http.GetAsync(path, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

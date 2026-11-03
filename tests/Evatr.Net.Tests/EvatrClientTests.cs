@@ -124,18 +124,31 @@ public class EvatrClientTests
         EvatrStatusClassifier.Classify(code).Should().Be(expected);
 
     [Theory]
-    [InlineData(HttpStatusCode.BadGateway, EvatrStatusClass.Retryable)]
-    [InlineData(HttpStatusCode.TooManyRequests, EvatrStatusClass.Retryable)]
-    [InlineData(HttpStatusCode.BadRequest, EvatrStatusClass.Unknown)]
-    public async Task Unparseable_body_is_never_invalid(HttpStatusCode http, EvatrStatusClass expected)
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.NotFound)] // observed live: HTML 404 from the gateway for a valid request
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.OK)]
+    public async Task Non_json_body_is_always_retryable(HttpStatusCode http)
     {
-        var (client, _) = Create(http, "<html>gateway</html>");
+        const string html = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>404 Not Found</title></head></html>";
+        var (client, _) = Create(http, html);
 
         var result = await client.CheckAsync(Qualified, Ct);
 
         result.Response.Should().BeNull();
-        result.RawResponse.Should().Be("<html>gateway</html>");
-        result.StatusClass.Should().Be(expected);
+        result.RawResponse.Should().Be(html);
+        result.StatusClass.Should().Be(EvatrStatusClass.Retryable);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadGateway, EvatrStatusClass.Retryable)]
+    [InlineData(HttpStatusCode.TooManyRequests, EvatrStatusClass.Retryable)]
+    [InlineData(HttpStatusCode.BadRequest, EvatrStatusClass.Unknown)]
+    public async Task Json_without_status_classifies_by_http_status(HttpStatusCode http, EvatrStatusClass expected)
+    {
+        var (client, _) = Create(http, "{}");
+
+        (await client.CheckAsync(Qualified, Ct)).StatusClass.Should().Be(expected);
     }
 
     [Fact]

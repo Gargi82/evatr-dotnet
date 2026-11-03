@@ -17,7 +17,13 @@ public sealed record ViesResult
     /// <summary>First VIES error code (e.g. <c>MS_UNAVAILABLE</c>), if any.</summary>
     public string? ErrorCode => Response?.ErrorWrappers?.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Error))?.Error;
 
-    public ViesStatusClass StatusClass => ViesStatusClassifier.Classify(Response?.Valid, ErrorCode, HttpStatusCode);
+    /// <summary>
+    /// How to react. A body that is not VIES JSON (e.g. an HTML error page from a gateway) is
+    /// always <see cref="ViesStatusClass.Retryable"/>, whatever the HTTP status.
+    /// </summary>
+    public ViesStatusClass StatusClass => Response is null
+        ? ViesStatusClass.Retryable
+        : ViesStatusClassifier.Classify(Response.Valid, ErrorCode, HttpStatusCode);
 
     /// <summary>Consultation number; only issued when the requester VAT ID was supplied.</summary>
     public string? RequestIdentifier => string.IsNullOrWhiteSpace(Response?.RequestIdentifier) ? null : Response.RequestIdentifier;

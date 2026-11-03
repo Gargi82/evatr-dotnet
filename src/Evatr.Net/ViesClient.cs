@@ -17,12 +17,25 @@ public sealed class ViesClientOptions
     /// invalid, <c>301</c> <c>MS_UNAVAILABLE</c>); use it for integration tests, never in production.
     /// </summary>
     public bool UseTestService { get; set; }
+
+    /// <summary>
+    /// Limits outgoing requests. VIES publishes no fixed limit (it answers
+    /// <c>MS_MAX_CONCURRENT_REQ</c> / <c>GLOBAL_MAX_CONCURRENT_REQ</c> when overloaded), so none
+    /// is applied by default. When no permit is granted the client throws <see cref="ServiceNotCalledException"/>.
+    /// </summary>
+    public System.Threading.RateLimiting.RateLimiter? RateLimiter { get; set; }
+
+    /// <summary>Only call the service inside this daily window (none by default); see <see cref="Evatr.Net.ServiceWindow"/>.</summary>
+    public ServiceWindow? ServiceWindow { get; set; }
+
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 }
 
 /// <summary>
-/// Client for the EU Commission VIES REST API. Takes an <see cref="HttpClient"/> so callers own
-/// retries, rate limiting and circuit breaking. Transport failures propagate as
-/// <see cref="HttpRequestException"/> / <see cref="TaskCanceledException"/>; callers must treat
+/// Client for the EU Commission VIES REST API. Takes an <see cref="HttpClient"/> so callers can add
+/// retries and circuit breaking; rate limit and service window are configured via
+/// <see cref="ViesClientOptions"/>. Transport failures propagate as <see cref="HttpRequestException"/>
+/// (including <see cref="ServiceNotCalledException"/>) / <see cref="TaskCanceledException"/>; callers must treat
 /// them, and <see cref="ViesStatusClass.Retryable"/> results such as <c>MS_UNAVAILABLE</c>, as
 /// "retry", never as "invalid".
 /// </summary>
@@ -36,6 +49,7 @@ public sealed class ViesClient
 
     private readonly HttpClient _http;
     private readonly string _checkPath;
+    private readonly RequestGate _gate;
 
     public ViesClient(HttpClient http, ViesClientOptions? options = null)
     {
@@ -43,6 +57,7 @@ public sealed class ViesClient
         options ??= new ViesClientOptions();
         _http.BaseAddress ??= options.BaseAddress;
         _checkPath = options.UseTestService ? TestCheckPath : CheckPath;
+        _gate = new RequestGate(options.RateLimiter, options.ServiceWindow, options.TimeProvider);
     }
 
     /// <summary>
@@ -61,6 +76,7 @@ public sealed class ViesClient
 
         var rawRequest = JsonSerializer.Serialize(request, RequestJson);
         using var content = new StringContent(rawRequest, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+        using var lease = await _gate.EnterAsync(ct).ConfigureAwait(false);
         using var response = await _http.PostAsync(_checkPath, content, ct).ConfigureAwait(false);
         var rawResponse = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -77,6 +93,7 @@ public sealed class ViesClient
     /// <summary>Fetches the raw member-state availability JSON (<c>GET /check-status</c>).</summary>
     public async Task<string> GetStatusRawAsync(CancellationToken ct = default)
     {
+        using var lease = await _gate.EnterAsync(ct).ConfigureAwait(false);
         using var response = await _http.GetAsync(StatusPath, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

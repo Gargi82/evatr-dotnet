@@ -15,7 +15,13 @@ public sealed record EvatrResult
     public EvatrResponse? Response { get; init; }
 
     public string? StatusCode => Response?.Status;
-    public EvatrStatusClass StatusClass => EvatrStatusClassifier.Classify(StatusCode, HttpStatusCode);
+    /// <summary>
+    /// How to react. A body that is not eVatR JSON (e.g. an HTML 404/503 page from the gateway,
+    /// observed on the live API) is always <see cref="EvatrStatusClass.Retryable"/>, whatever the HTTP status.
+    /// </summary>
+    public EvatrStatusClass StatusClass => Response is null
+        ? EvatrStatusClass.Retryable
+        : EvatrStatusClassifier.Classify(StatusCode, HttpStatusCode);
 
     public FieldResult CompanyName => FieldResultParser.Parse(Response?.CompanyNameResult);
     public FieldResult Street => FieldResultParser.Parse(Response?.StreetResult);
