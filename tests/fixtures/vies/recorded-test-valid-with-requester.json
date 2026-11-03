@@ -1,0 +1,17 @@
+{
+  "countryCode" : "DE",
+  "vatNumber" : "100",
+  "requestDate" : "2026-11-03T00:52:45.738Z",
+  "valid" : true,
+  "requestIdentifier" : "WAPI0000001",
+  "traderName" : "John Doe",
+  "traderStreet" : "123 Main St, Anytown, UK",
+  "traderPostalCode" : "1000",
+  "traderCity" : "London",
+  "traderCompanyType" : "000",
+  "traderNameMatch" : "VALID",
+  "traderStreetMatch" : "VALID",
+  "traderPostalCodeMatch" : "VALID",
+  "traderCityMatch" : "VALID",
+  "traderCompanyTypeMatch" : "VALID"
+}
