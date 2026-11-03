@@ -1,0 +1,2 @@
+# Recorded API responses must stay byte-exact (no line-ending conversion).
+tests/fixtures/** -text

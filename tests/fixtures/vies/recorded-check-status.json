@@ -1,0 +1,90 @@
+{
+  "vow" : {
+    "available" : true
+  },
+  "countries" : [ {
+    "countryCode" : "AT",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "BE",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "BG",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "CY",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "CZ",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "DE",
+    "availability" : "Unavailable"
+  }, {
+    "countryCode" : "DK",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "EE",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "EL",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "ES",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "FI",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "FR",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "HR",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "HU",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "IE",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "IT",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "LT",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "LU",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "LV",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "MT",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "NL",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "PL",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "PT",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "RO",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "SE",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "SI",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "SK",
+    "availability" : "Available"
+  }, {
+    "countryCode" : "XI",
+    "availability" : "Available"
+  } ]
+}
