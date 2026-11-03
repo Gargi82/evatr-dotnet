@@ -31,6 +31,13 @@ public class RequestGateTests
             .IsOpen(DateTimeOffset.Parse(now)).Should().Be(open);
 
     [Fact]
+    public void Default_time_zone_is_berlin_and_explicit_zone_is_kept()
+    {
+        new ServiceWindow { Start = new(6, 0), End = new(22, 0) }.TimeZone.BaseUtcOffset.Should().Be(TimeSpan.FromHours(1));
+        new ServiceWindow { Start = new(6, 0), End = new(22, 0), TimeZone = TimeZoneInfo.Utc }.TimeZone.Should().Be(TimeZoneInfo.Utc);
+    }
+
+    [Fact]
     public void Next_opening_is_today_or_tomorrow()
     {
         var window = new ServiceWindow { Start = new(6, 0), End = new(22, 0), TimeZone = Berlin };

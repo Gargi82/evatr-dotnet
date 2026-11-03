@@ -12,8 +12,17 @@ public sealed record ServiceWindow
     /// <summary>Exclusive end of the window.</summary>
     public required TimeOnly End { get; init; }
 
-    /// <summary>Time zone the window is defined in. Defaults to Europe/Berlin.</summary>
-    public TimeZoneInfo TimeZone { get; init; } = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+    private TimeZoneInfo? _timeZone;
+
+    /// <summary>
+    /// Time zone the window is defined in. Defaults to Europe/Berlin, resolved on first use so that
+    /// setting another zone works on systems without time zone data for Berlin.
+    /// </summary>
+    public TimeZoneInfo TimeZone
+    {
+        get => _timeZone ??= TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+        init => _timeZone = value;
+    }
 
     public bool IsOpen(DateTimeOffset now)
     {

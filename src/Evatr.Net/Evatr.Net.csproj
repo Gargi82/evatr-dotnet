@@ -22,6 +22,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Deterministic>true</Deterministic>
+    <!-- After 0.1.0 is on nuget.org, add <PackageValidationBaselineVersion>0.1.0</PackageValidationBaselineVersion>. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
 
   <ItemGroup>
