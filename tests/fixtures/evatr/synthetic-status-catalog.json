@@ -1,0 +1,5 @@
+[
+  {"status":"evatr-0000","kategorie":"Result","httpcode":200,"meldung":"valid"},
+  {"status":"evatr-2001","kategorie":"Result","httpcode":200,"meldung":"not found"},
+  {"status":"evatr-2011","kategorie":"Error","httpcode":503,"meldung":"temporary error"}
+]
