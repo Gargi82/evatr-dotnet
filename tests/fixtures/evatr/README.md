@@ -32,4 +32,4 @@ EVATR_REQUESTER_VAT_ID=DE... EVATR_RECORD_FIXTURES=1 dotnet test --filter "Categ
 ```
 
 Fixtures are published with the MIT library. Mask the requester VAT ID and only use well-known
-large companies as counterparties (never sole traders: personal data, DESIGN.md §8).
+large companies as counterparties (never sole traders: their data is personal data).

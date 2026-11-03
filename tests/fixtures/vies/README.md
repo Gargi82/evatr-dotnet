@@ -15,4 +15,4 @@ Exact response bodies from the live VIES REST API, written by the opt-in live te
 Not covered by the test service: `IP_BLOCKED`, `GLOBAL_MAX_CONCURRENT_REQ_TIME`.
 
 Recording: `EVATR_RECORD_FIXTURES=1 dotnet test --filter "Category=Live"`. Only use well-known
-large companies as counterparties (never sole traders: personal data, DESIGN.md §8).
+large companies as counterparties (never sole traders: their data is personal data).

@@ -127,6 +127,19 @@ Retries and circuit breaking are left to you: pass an `HttpClient` with your own
 - VIES: set `ViesClientOptions.UseTestService = true` to call `check-vat-test-service`, which answers
   by VAT number: `100` valid, `200` invalid, `201` `INVALID_INPUT`, `301` `MS_UNAVAILABLE`, and more.
 
+## Development
+
+```sh
+dotnet build
+dotnet test --filter "Category!=Live"   # unit tests, replay recorded fixtures
+dotnet test --filter "Category=Live"    # contract tests against the live APIs (opt-in)
+```
+
+Fixtures under `tests/fixtures/` are exact responses recorded by the live tests
+(`EVATR_RECORD_FIXTURES=1`). Real eVatR checks need your own DE VAT ID in
+`EVATR_REQUESTER_VAT_ID`; it is masked as `DE000000000` in recorded fixtures. When recording, only
+use well-known large companies or made-up IDs as counterparties.
+
 ## License
 
-MIT.
+[MIT](LICENSE).
