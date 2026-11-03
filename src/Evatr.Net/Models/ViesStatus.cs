@@ -53,8 +53,9 @@ public static class ViesMatchParser
 }
 
 /// <summary>
-/// Default mapping of VIES outcomes. An error code always wins over <c>valid</c>.
-/// TODO: verify error codes against live responses. Unknown codes map to
+/// Default mapping of VIES outcomes. An error code always wins over <c>valid</c>. All codes
+/// except <c>IP_BLOCKED</c> and <c>GLOBAL_MAX_CONCURRENT_REQ_TIME</c> were observed on the VIES
+/// test service on 2026-11-03 (errors arrive with HTTP 200). Unknown codes map to
 /// <see cref="ViesStatusClass.Unknown"/>, never to Invalid.
 /// </summary>
 public static class ViesStatusClassifier

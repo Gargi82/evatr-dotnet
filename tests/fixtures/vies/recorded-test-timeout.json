@@ -1,0 +1,6 @@
+{
+  "actionSucceed" : false,
+  "errorWrappers" : [ {
+    "error" : "TIMEOUT"
+  } ]
+}

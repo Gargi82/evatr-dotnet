@@ -4,9 +4,10 @@ using Evatr.Net.Models;
 namespace Evatr.Net;
 
 /// <summary>
-/// Parses the eVatR status catalog. The exact schema is not verified yet, so the parser is
-/// tolerant: it accepts a top-level array or an object wrapping one, and reads
-/// status/code, kategorie, httpcode and meldung/text case-insensitively.
+/// Parses the eVatR status catalog. The live API returns a top-level array of
+/// <c>{status, kategorie, httpcode, feld, meldung}</c> objects (<c>httpcode</c> and <c>feld</c>
+/// are absent on some entries). The parser stays tolerant of a wrapping object and alternative
+/// field names in case the schema drifts.
 /// </summary>
 public static class EvatrStatusCatalog
 {
@@ -25,7 +26,8 @@ public static class EvatrStatusCatalog
                 code,
                 GetString(item, "kategorie", "category"),
                 GetInt(item, "httpcode", "httpStatus"),
-                GetString(item, "meldung", "text", "message")));
+                GetString(item, "meldung", "text", "message"),
+                GetString(item, "feld", "field")));
         }
 
         return result;

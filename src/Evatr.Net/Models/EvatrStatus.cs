@@ -17,7 +17,15 @@ public enum EvatrStatusClass
 
     /// <summary>Problem with the requester's own VAT ID (merchant setup error).</summary>
     RequesterError,
+
+    /// <summary>The request was rejected: missing field, malformed or German requested VAT ID, unknown country code.</summary>
+    InvalidInput,
 }
 
-/// <summary>An entry of the status catalog (<c>GET /v1/info/statusmeldungen</c>).</summary>
-public sealed record EvatrStatus(string Code, string? Category, int? HttpStatus, string? Message);
+/// <summary>An entry of the status catalog (<c>GET /app/v1/info/statusmeldungen</c>).</summary>
+/// <param name="Code">Status code (<c>status</c>), e.g. <c>evatr-0000</c>.</param>
+/// <param name="Category">Category (<c>kategorie</c>): <c>Ergebnis</c>, <c>Hinweis</c> or <c>Fehler</c>.</param>
+/// <param name="HttpStatus">HTTP status BZSt serves the code with (<c>httpcode</c>); absent for some codes.</param>
+/// <param name="Message">German message text (<c>meldung</c>).</param>
+/// <param name="Field">Request field the code refers to (<c>feld</c>), e.g. <c>angefragteUstid</c>; may list several, comma-separated.</param>
+public sealed record EvatrStatus(string Code, string? Category, int? HttpStatus, string? Message, string? Field = null);

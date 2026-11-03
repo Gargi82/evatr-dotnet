@@ -15,7 +15,7 @@ public class ViesClientTests
     [Fact]
     public async Task Request_uses_documented_endpoint_and_field_names_and_keeps_raw_strings()
     {
-        var (client, handler) = Create(HttpStatusCode.OK, Fixture("synthetic-valid.json"));
+        var (client, handler) = Create(HttpStatusCode.OK, Fixture("recorded-test-valid-with-requester.json"));
 
         var result = await client.CheckAsync(WithRequester, TestContext.Current.CancellationToken);
 
@@ -24,30 +24,42 @@ public class ViesClientTests
         handler.LastBody.Should().Be(result.RawRequest);
         result.RawRequest.Should().Be(
             "{\"countryCode\":\"DE\",\"vatNumber\":\"123456789\",\"requesterMemberStateCode\":\"DE\",\"requesterNumber\":\"987654321\",\"traderName\":\"Beispiel GmbH\",\"traderCity\":\"Berlin\"}");
-        result.RawResponse.Should().Be(Fixture("synthetic-valid.json"));
+        result.RawResponse.Should().Be(Fixture("recorded-test-valid-with-requester.json"));
     }
 
     [Fact]
     public async Task Valid_response_maps_status_consultation_number_and_matches()
     {
-        var (client, _) = Create(HttpStatusCode.OK, Fixture("synthetic-valid.json"));
+        var (client, _) = Create(HttpStatusCode.OK, Fixture("recorded-test-valid-with-requester.json"));
 
         var result = await client.CheckAsync(WithRequester, TestContext.Current.CancellationToken);
 
         result.StatusClass.Should().Be(ViesStatusClass.Valid);
-        result.RequestIdentifier.Should().Be("WAPIAAAAZsynthetic1");
+        result.RequestIdentifier.Should().Be("WAPI0000001");
         result.TraderName.Should().Be(ViesMatch.Valid);
-        result.TraderCity.Should().Be(ViesMatch.Invalid);
-        result.TraderStreet.Should().Be(ViesMatch.NotProcessed);
-        result.Response!.Name.Should().Be("Beispiel GmbH");
+        result.TraderCity.Should().Be(ViesMatch.Valid);
+        result.Response!.TraderName.Should().Be("John Doe");
+    }
+
+    [Fact]
+    public async Task Real_valid_response_without_requester_has_name_but_no_consultation_number()
+    {
+        var (client, _) = Create(HttpStatusCode.OK, Fixture("recorded-real-valid-google-ireland.json"));
+
+        var result = await client.CheckAsync(ViesRequest.FromVatId("IE6388047V"), TestContext.Current.CancellationToken);
+
+        result.StatusClass.Should().Be(ViesStatusClass.Valid);
+        result.RequestIdentifier.Should().BeNull();
+        result.Response!.Name.Should().Be("GOOGLE IRELAND LIMITED");
+        result.TraderName.Should().Be(ViesMatch.NotProcessed);
     }
 
     [Fact]
     public async Task Invalid_number_is_invalid_and_empty_consultation_number_is_null()
     {
-        var (client, _) = Create(HttpStatusCode.OK, Fixture("synthetic-invalid.json"));
+        var (client, _) = Create(HttpStatusCode.OK, Fixture("recorded-real-invalid.json"));
 
-        var result = await client.CheckAsync(ViesRequest.FromVatId("DE000000000"), TestContext.Current.CancellationToken);
+        var result = await client.CheckAsync(ViesRequest.FromVatId("ATU12345675"), TestContext.Current.CancellationToken);
 
         result.StatusClass.Should().Be(ViesStatusClass.Invalid);
         result.RequestIdentifier.Should().BeNull();
@@ -58,7 +70,7 @@ public class ViesClientTests
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     public async Task Ms_unavailable_is_retryable_never_invalid(HttpStatusCode status)
     {
-        var (client, _) = Create(status, Fixture("synthetic-ms-unavailable.json"));
+        var (client, _) = Create(status, Fixture("recorded-test-ms-unavailable.json"));
 
         var result = await client.CheckAsync(WithRequester, TestContext.Current.CancellationToken);
 
@@ -69,10 +81,38 @@ public class ViesClientTests
     [Fact]
     public async Task Invalid_input_is_reported_separately_from_invalid()
     {
-        var (client, _) = Create(HttpStatusCode.BadRequest, Fixture("synthetic-invalid-input.json"));
+        var (client, _) = Create(HttpStatusCode.OK, Fixture("recorded-test-invalid-input.json"));
 
         (await client.CheckAsync(WithRequester, TestContext.Current.CancellationToken))
             .StatusClass.Should().Be(ViesStatusClass.InvalidInput);
+    }
+
+    [Theory]
+    [InlineData("recorded-test-service-unavailable.json", ViesStatusClass.Retryable)]
+    [InlineData("recorded-test-timeout.json", ViesStatusClass.Retryable)]
+    [InlineData("recorded-test-global-max-concurrent-req.json", ViesStatusClass.Retryable)]
+    [InlineData("recorded-test-ms-max-concurrent-req.json", ViesStatusClass.Retryable)]
+    [InlineData("recorded-test-ms-max-concurrent-req-time.json", ViesStatusClass.Retryable)]
+    [InlineData("recorded-test-invalid-requester-info.json", ViesStatusClass.RequesterError)]
+    [InlineData("recorded-test-vat-blocked.json", ViesStatusClass.Blocked)]
+    [InlineData("recorded-test-invalid.json", ViesStatusClass.Invalid)]
+    public async Task Recorded_test_service_outcomes_are_classified(string fixture, ViesStatusClass expected)
+    {
+        var (client, _) = Create(HttpStatusCode.OK, Fixture(fixture));
+
+        (await client.CheckAsync(WithRequester, TestContext.Current.CancellationToken)).StatusClass.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task Test_service_option_switches_the_check_endpoint()
+    {
+        var handler = new StubHandler(HttpStatusCode.OK, Fixture("recorded-test-valid.json"));
+        var client = new ViesClient(new HttpClient(handler), new ViesClientOptions { UseTestService = true });
+
+        var result = await client.CheckAsync(new ViesRequest { CountryCode = "DE", VatNumber = "100" }, TestContext.Current.CancellationToken);
+
+        handler.LastRequest!.RequestUri!.ToString().Should().Be("https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service");
+        result.StatusClass.Should().Be(ViesStatusClass.Valid);
     }
 
     [Theory]
@@ -166,7 +206,7 @@ public class ViesClientTests
         ViesMatchParser.Parse(code).Should().Be(expected);
 
     private static string Fixture(string name) =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "vies", name)).TrimEnd('\r', '\n');
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "vies", name));
 
     private static (ViesClient, StubHandler) Create(HttpStatusCode status, string body)
     {

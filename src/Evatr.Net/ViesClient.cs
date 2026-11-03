@@ -10,6 +10,13 @@ public sealed class ViesClientOptions
     public static readonly Uri DefaultBaseAddress = new("https://ec.europa.eu/taxation_customs/vies/rest-api/");
 
     public Uri BaseAddress { get; set; } = DefaultBaseAddress;
+
+    /// <summary>
+    /// Sends checks to <c>check-vat-test-service</c> instead of <c>check-vat-number</c>. The test
+    /// service returns canned answers keyed by the VAT number (e.g. <c>100</c> valid, <c>200</c>
+    /// invalid, <c>301</c> <c>MS_UNAVAILABLE</c>); use it for integration tests, never in production.
+    /// </summary>
+    public bool UseTestService { get; set; }
 }
 
 /// <summary>
@@ -22,21 +29,25 @@ public sealed class ViesClientOptions
 public sealed class ViesClient
 {
     private const string CheckPath = "check-vat-number";
+    private const string TestCheckPath = "check-vat-test-service";
     private const string StatusPath = "check-status";
 
     private static readonly JsonSerializerOptions RequestJson = new() { PropertyNamingPolicy = null };
 
     private readonly HttpClient _http;
+    private readonly string _checkPath;
 
     public ViesClient(HttpClient http, ViesClientOptions? options = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
-        _http.BaseAddress ??= (options ?? new ViesClientOptions()).BaseAddress;
+        options ??= new ViesClientOptions();
+        _http.BaseAddress ??= options.BaseAddress;
+        _checkPath = options.UseTestService ? TestCheckPath : CheckPath;
     }
 
     /// <summary>
-    /// Checks a VAT number. The body is parsed whatever the HTTP status, because VIES reports
-    /// errors such as <c>MS_UNAVAILABLE</c> in <c>errorWrappers</c> on 4xx/5xx too.
+    /// Checks a VAT number. The body is parsed whatever the HTTP status: VIES reports errors such
+    /// as <c>MS_UNAVAILABLE</c> in <c>errorWrappers</c>, observed with HTTP 200, and possibly 4xx/5xx.
     /// </summary>
     public async Task<ViesResult> CheckAsync(ViesRequest request, CancellationToken ct = default)
     {
@@ -50,7 +61,7 @@ public sealed class ViesClient
 
         var rawRequest = JsonSerializer.Serialize(request, RequestJson);
         using var content = new StringContent(rawRequest, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-        using var response = await _http.PostAsync(CheckPath, content, ct).ConfigureAwait(false);
+        using var response = await _http.PostAsync(_checkPath, content, ct).ConfigureAwait(false);
         var rawResponse = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
         return new ViesResult

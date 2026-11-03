@@ -21,7 +21,9 @@ public sealed class EvatrClientOptions
 public sealed class EvatrClient
 {
     private const string CheckPath = "app/v1/abfrage";
-    private const string StatusCatalogPath = "v1/info/statusmeldungen";
+    // The OpenAPI server URL is /app, so all paths live under it (the un-prefixed
+    // /v1/info/statusmeldungen also answers today, but is not documented).
+    private const string StatusCatalogPath = "app/v1/info/statusmeldungen";
     private const string MemberStatesPath = "app/v1/info/eu_mitgliedstaaten";
 
     private static readonly JsonSerializerOptions RequestJson = new() { PropertyNamingPolicy = null };
